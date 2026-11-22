@@ -1,0 +1,23 @@
+Lab 10 - Add Your Own System Call: trace
+Catana Marin, FAF-241
+
+1. In "trace 32 grep hello README" only read is printed because the mask 32 = 2^5
+   has only bit 5 set, and 5 is SYS_read. open is call 15 and close is call 21; their
+   bits in 32 are 0, so the test (p->trace_mask >> num) & 1 in syscall() is false for
+   them. grep does call open and close: with mask 2147483647 they appear.
+
+2. The line np->trace_mask = p->trace_mask; added in fork() in kernel/proc.c.
+   It copies the mask of the parent into every child, so the children that fork again
+   also print their lines. In my run pids 5, 6, 7 and 8 printed lines.
+
+3. echo calls write twice for "echo hi": write(1, "hi", 2), then write(1, "\n", 1)
+   (user/echo.c writes each argument and then the new line separately). The kernel
+   prints the trace line right after the first write returns, before the second
+   write prints the new line, so the trace line is glued to "hi":
+   hi67: syscall write -> 2
+   67: syscall write -> 1
+
+4. open is 15 and close is 21, so the mask is 2^15 + 2^21 = 32768 + 2097152 = 2129920.
+   "trace 2129920 grep hello README" printed only:
+   68: syscall open -> 3
+   68: syscall close -> 0
